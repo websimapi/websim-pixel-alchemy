@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Alchemy</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Pixel Alchemy</h1>
+            <p>Upload &rarr; AI Modify &rarr; Algorithmic Sort</p>
+        </header>
+
+        <section id="input-section">
+            <div class="file-upload-wrapper">
+                <input type="file" id="imageInput" accept="image/*">
+                <div class="upload-placeholder">
+                    <span>Tap to upload Source Image</span>
+                </div>
+                <img id="preview" hidden>
+            </div>
+            
+            <textarea id="promptInput" placeholder="Describe how AI should modify this image..."></textarea>
+            
+            <button id="generateBtn" disabled>Initiate Sequence</button>
+        </section>
+
+        <section id="status-section" class="hidden">
+            <div class="loader"></div>
+            <p id="status-text">Initializing...</p>
+            <progress id="progressBar" value="0" max="100"></progress>
+        </section>
+
+        <section id="results-section" class="hidden">
+            <h2>Current Generation</h2>
+            <div class="grid">
+                <div class="card">
+                    <span>Original</span>
+                    <img id="res-original">
+                </div>
+                <div class="card">
+                    <span>AI Modified (Target)</span>
+                    <img id="res-target">
+                </div>
+                <div class="card">
+                    <span>Original Pixels &rarr; Target Shape</span>
+                    <img id="res-algo1">
+                </div>
+                <div class="card">
+                    <span>Target Pixels &rarr; Original Shape</span>
+                    <img id="res-algo2">
+                </div>
+            </div>
+        </section>
+
+        <section id="history-section">
+            <h2>History (DB Column 1)</h2>
+            <div id="history-list"></div>
+        </section>
+    </div>
+
+    <script type="module" src="app.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
