@@ -110,9 +110,6 @@ generateBtn.addEventListener('click', async () => {
         updateStatus(60, "Running Pixel Algorithms...");
         
         // 3. Process Algorithms with Visualization
-        // Get canvas context
-        const processCanvas = document.getElementById('processCanvas');
-        const ctx = processCanvas.getContext('2d');
         
         // Create local object URLs for fast access by the processor/canvas
         // Source is 'selectedFile' (File object)
