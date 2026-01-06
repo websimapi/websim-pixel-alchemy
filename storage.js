@@ -1,4 +1,4 @@
-const COLLECTION_NAME = 'user_pixel_records_v1';
+const COLLECTION_NAME = 'user_pixel_records_v2';
 const room = new WebsimSocket();
 
 export async function uploadFile(blob, name) {
@@ -20,19 +20,30 @@ export async function getUserRecord() {
     // For safety, we will filter by a field we control.
     
     // Attempt to find the user's ONE row
-    const records = await room.collection(COLLECTION_NAME).filter({
-        owner_id: user.id
-    }).getList();
+    try {
+        const records = await room.collection(COLLECTION_NAME).filter({
+            owner_id: user.id
+        }).getList();
 
-    if (records && records.length > 0) {
-        return records[0];
+        if (records && records.length > 0) {
+            return records[0];
+        }
+    } catch (err) {
+        console.warn("getUserRecord failed, likely collection empty or network", err);
     }
     return null;
 }
 
 export async function initOrUpdateUserRecord(dataObject) {
+    console.log("Saving to DB...");
     const user = await window.websim.getCurrentUser();
-    let record = await getUserRecord();
+    let record = null;
+    
+    try {
+        record = await getUserRecord();
+    } catch (e) {
+        console.error("Error fetching record:", e);
+    }
 
     // Prepare the structure to append
     const newEntry = {
@@ -41,36 +52,26 @@ export async function initOrUpdateUserRecord(dataObject) {
     };
 
     if (!record) {
+        console.log("Creating new user record...");
         // Initialize: 10 columns of empty arrays/objects
         const payload = {
             owner_id: user.id,
-            col_1: [newEntry], // Column 1 gets the data
-            col_2: [],
-            col_3: [],
-            col_4: [],
-            col_5: [],
-            col_6: [],
-            col_7: [],
-            col_8: [],
-            col_9: [],
-            col_10: []
+            col_1: [newEntry], 
+            col_2: [], col_3: [], col_4: [], col_5: [],
+            col_6: [], col_7: [], col_8: [], col_9: [], col_10: []
         };
         await room.collection(COLLECTION_NAME).create(payload);
     } else {
-        // Append to col_1
-        // We must fetch current col_1 data, append, and update
+        console.log("Updating existing record...", record.id);
         let currentList = record.col_1 || [];
         if (!Array.isArray(currentList)) currentList = [];
-        
-        // Add new entry to the front or back? Appending usually means end, 
-        // but for UI visualization, prepending (newest first) is often better. 
-        // Prompt says "appended", so we push to end.
         currentList.push(newEntry);
 
         await room.collection(COLLECTION_NAME).update(record.id, {
             col_1: currentList
         });
     }
+    console.log("DB Save complete.");
 }
 
 export function subscribeToHistory(callback) {

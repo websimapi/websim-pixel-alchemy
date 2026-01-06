@@ -29,8 +29,11 @@
         </section>
 
         <section id="status-section" class="hidden">
-            <div class="loader"></div>
-            <p id="status-text">Initializing...</p>
+            <canvas id="processCanvas" width="512" height="512"></canvas>
+            <div class="status-info">
+                <div class="loader"></div>
+                <p id="status-text">Initializing...</p>
+            </div>
             <progress id="progressBar" value="0" max="100"></progress>
         </section>
 

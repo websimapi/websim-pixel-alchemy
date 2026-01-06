@@ -61,10 +61,29 @@ generateBtn.addEventListener('click', async () => {
         updateStatus(10, "Uploading Source Image...");
 
         // 1. Upload Original
+        // Start scanning effect on canvas
+        const processCanvas = document.getElementById('processCanvas');
+        const ctx = processCanvas.getContext('2d');
+        const scanImg = new Image();
+        scanImg.src = URL.createObjectURL(selectedFile);
+        let scanAnimId;
+        
+        scanImg.onload = () => {
+            // Simple scan animation loop
+            let scanY = 0;
+            const drawScan = () => {
+                ctx.drawImage(scanImg, 0, 0, 512, 512);
+                ctx.fillStyle = 'rgba(79, 70, 229, 0.3)'; // Primary color with opacity
+                ctx.fillRect(0, scanY, 512, 20);
+                scanY = (scanY + 5) % 512;
+                scanAnimId = requestAnimationFrame(drawScan);
+            };
+            drawScan();
+        };
+
         const sourceUrl = await uploadFile(selectedFile, "source.png");
         
-        // Convert Blob to Base64 for ImageGen (if needed) or use URL if public.
-        // Websim ImageGen usually accepts URL or Base64. Let's use Base64 for immediate local input to avoid fetch latency/cors issues with fresh uploads.
+        // Convert Blob to Base64 for ImageGen
         const sourceBase64 = await fileToBase64(selectedFile);
 
         updateStatus(30, "AI Generating Target Image (this takes ~10s)...");
@@ -85,10 +104,27 @@ generateBtn.addEventListener('click', async () => {
         const targetBlob = await fetch(targetUrlTemp).then(r => r.blob());
         const targetUrl = await uploadFile(targetBlob, "target_ai.png");
 
+        // Stop scan animation
+        if (scanAnimId) cancelAnimationFrame(scanAnimId);
+
         updateStatus(60, "Running Pixel Algorithms...");
         
-        // 3. Process Algorithms
-        const { algo1Blob, algo2Blob } = await processImages(sourceUrl, targetUrlTemp); // Use temp url for processing to save bandwidth if possible, or sourceUrl
+        // 3. Process Algorithms with Visualization
+        // Get canvas context
+        const processCanvas = document.getElementById('processCanvas');
+        const ctx = processCanvas.getContext('2d');
+        
+        // Create local object URLs for fast access by the processor/canvas
+        // Source is 'selectedFile' (File object)
+        const sourceObjUrl = URL.createObjectURL(selectedFile);
+        // Target is 'targetBlob' (Blob)
+        const targetObjUrl = URL.createObjectURL(targetBlob);
+
+        const { algo1Blob, algo2Blob } = await processImages(sourceObjUrl, targetObjUrl, ctx);
+        
+        // Clean up object URLs
+        URL.revokeObjectURL(sourceObjUrl);
+        URL.revokeObjectURL(targetObjUrl);
 
         updateStatus(80, "Uploading Algorithm Results...");
 
@@ -120,6 +156,9 @@ generateBtn.addEventListener('click', async () => {
         statusSection.classList.add('hidden');
         resultsSection.classList.remove('hidden');
         inputSection.classList.remove('hidden');
+        
+        // Clear canvas for next time
+        ctx.clearRect(0,0,512,512);
 
         // Reset inputs
         promptInput.value = "";
