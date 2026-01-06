@@ -1,5 +1,5 @@
 import { processImages } from './processor.js';
-import { uploadFile, initOrUpdateUserRecord, subscribeToHistory } from './storage.js';
+import { uploadFile, saveCreation, getCreations, togglePublicStatus, subscribeToCreations } from './storage.js';
 
 // Elements
 const imageInput = document.getElementById('imageInput');
@@ -11,21 +11,136 @@ const statusText = document.getElementById('status-text');
 const statusSection = document.getElementById('status-section');
 const resultsSection = document.getElementById('results-section');
 const inputSection = document.getElementById('input-section');
-const historyList = document.getElementById('history-list');
+const galleryGrid = document.getElementById('gallery-grid');
+const gallerySearch = document.getElementById('gallerySearch');
+const navBtns = document.querySelectorAll('.nav-btn');
 
 // State
 let selectedFile = null;
+let currentTab = 'create';
+let currentUser = null;
 
 // Init
 async function init() {
-    const user = await window.websim.getCurrentUser();
-    if (!user) {
+    currentUser = await window.websim.getCurrentUser();
+    if (!currentUser) {
         alert("Please sign in to use Pixel Alchemy");
         return;
     }
 
-    // Subscribe to DB updates
-    subscribeToHistory(renderHistory);
+    // Init tabs
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // Gallery Search
+    gallerySearch.addEventListener('input', () => loadGallery(currentTab));
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    
+    // Update Nav
+    navBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+
+    // Update View
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    if (tab === 'create') {
+        document.getElementById('tab-create').classList.add('active');
+    } else {
+        document.getElementById('tab-gallery').classList.add('active');
+        loadGallery(tab);
+    }
+}
+
+async function loadGallery(mode) {
+    galleryGrid.innerHTML = '<div class="loader"></div>';
+    
+    const records = await getCreations(mode);
+    const filterText = gallerySearch.value.toLowerCase();
+    
+    const filtered = records.filter(item => 
+        (item.prompt || '').toLowerCase().includes(filterText)
+    );
+
+    renderGallery(filtered, mode === 'mine');
+}
+
+function renderGallery(items, isMyGallery) {
+    galleryGrid.innerHTML = '';
+    
+    if (items.length === 0) {
+        galleryGrid.innerHTML = '<p style="text-align:center; color:var(--muted);">No creations found.</p>';
+        return;
+    }
+
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'gallery-item';
+        
+        const date = new Date(item.timestamp).toLocaleDateString();
+        const username = item.owner_username || 'Unknown Alchemist';
+        
+        // Public Toggle (Only for owner)
+        let publicToggleHTML = '';
+        if (isMyGallery) {
+            publicToggleHTML = `
+                <label class="public-toggle">
+                    <input type="checkbox" class="public-check" data-id="${item.id}" ${item.is_public ? 'checked' : ''}>
+                    Public
+                </label>
+            `;
+        } else {
+            publicToggleHTML = `
+                <span style="font-size:0.8rem; color:var(--muted);">by ${username}</span>
+            `;
+        }
+
+        // Assets
+        const assets = [
+            { url: item.source_url, label: 'Source' },
+            { url: item.target_url, label: 'Target' },
+            { url: item.algo1_url, label: 'S->T' },
+            { url: item.algo2_url, label: 'T->S' }
+        ];
+
+        div.innerHTML = `
+            <div class="gallery-header">
+                <div>
+                    <p class="gallery-prompt">"${item.prompt}"</p>
+                    <div class="gallery-date">${date}</div>
+                </div>
+            </div>
+            
+            <div class="gallery-thumbs">
+                ${assets.map(a => `<a href="${a.url}" target="_blank"><img src="${a.url}" title="${a.label}"></a>`).join('')}
+                ${item.video_url ? `<a href="${item.video_url}" target="_blank"><video src="${item.video_url}" muted loop onmouseover="this.play()" onmouseout="this.pause()"></video></a>` : ''}
+            </div>
+
+            <div class="gallery-actions">
+                ${publicToggleHTML}
+                <div class="download-group">
+                    <a href="${item.target_url}" download="pixel_alchemy_target.png" class="icon-btn" title="Download AI Result">⬇</a>
+                    ${item.video_url ? `<a href="${item.video_url}" download="pixel_alchemy.webm" class="icon-btn" title="Download Video">▶</a>` : ''}
+                </div>
+            </div>
+        `;
+
+        galleryGrid.appendChild(div);
+    });
+
+    // Attach listeners for toggles
+    if (isMyGallery) {
+        document.querySelectorAll('.public-check').forEach(chk => {
+            chk.addEventListener('change', async (e) => {
+                const id = e.target.dataset.id;
+                await togglePublicStatus(id, e.target.checked);
+            });
+        });
+    }
 }
 
 // Event Listeners
@@ -142,7 +257,7 @@ generateBtn.addEventListener('click', async () => {
             video_url: videoUrl
         };
 
-        await initOrUpdateUserRecord(dataPayload);
+        await saveCreation(dataPayload);
 
         updateStatus(100, "Done!");
         
@@ -152,6 +267,13 @@ generateBtn.addEventListener('click', async () => {
         document.getElementById('res-algo1').src = algo1Url;
         document.getElementById('res-algo2').src = algo2Url;
         document.getElementById('res-video').src = videoUrl;
+
+        // Add download links for current results
+        document.querySelectorAll('#results-section .dl-btn').forEach((btn, idx) => {
+            // Mapping index to urls: 0=orig, 1=target, 2=algo1, 3=algo2, 4=video
+            const urls = [sourceUrl, targetUrl, algo1Url, algo2Url, videoUrl];
+            if(urls[idx]) btn.href = urls[idx];
+        });
 
         statusSection.classList.add('hidden');
         resultsSection.classList.remove('hidden');
@@ -191,29 +313,6 @@ function fileToBase64(file) {
     });
 }
 
-function renderHistory(list) {
-    historyList.innerHTML = '';
-    // Reverse to show newest first
-    const reversed = [...list].reverse();
-    
-    reversed.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'history-item';
-        
-        const date = new Date(item.timestamp).toLocaleString();
-        
-        div.innerHTML = `
-            <span class="history-meta">${date} - "${item.prompt}"</span>
-            <div class="history-thumbs">
-                <a href="${item.source_url}" target="_blank"><img src="${item.source_url}" title="Source"></a>
-                <a href="${item.target_url}" target="_blank"><img src="${item.target_url}" title="AI Target"></a>
-                <a href="${item.algo1_url}" target="_blank"><img src="${item.algo1_url}" title="Source Px -> Target"></a>
-                <a href="${item.algo2_url}" target="_blank"><img src="${item.algo2_url}" title="Target Px -> Source"></a>
-                ${item.video_url ? `<a href="${item.video_url}" target="_blank"><video src="${item.video_url}" title="Diff Animation" muted loop autoplay style="width:40px;height:40px;object-fit:cover;"></video></a>` : ''}
-            </div>
-        `;
-        historyList.appendChild(div);
-    });
-}
+// renderHistory removed - replaced by unified renderGallery
 
 init();

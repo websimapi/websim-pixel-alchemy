@@ -1,4 +1,4 @@
-const COLLECTION_NAME = 'user_pixel_records_v2';
+const COLLECTION_NAME = 'pixel_creations_v1';
 const room = new WebsimSocket();
 
 export async function uploadFile(blob, name) {
@@ -12,78 +12,52 @@ export async function uploadFile(blob, name) {
     }
 }
 
-export async function getUserRecord() {
+export async function saveCreation(dataObject) {
     const user = await window.websim.getCurrentUser();
-    // Filter specifically for the current user's record
-    // Note: In websim, filter usually works on custom fields or built-in props. 
-    // We assume 'username' is a field we populate or rely on created_by implicit filtering if strict ownership is on.
-    // For safety, we will filter by a field we control.
     
-    // Attempt to find the user's ONE row
-    try {
-        const records = await room.collection(COLLECTION_NAME).filter({
-            owner_id: user.id
-        }).getList();
-
-        if (records && records.length > 0) {
-            return records[0];
-        }
-    } catch (err) {
-        console.warn("getUserRecord failed, likely collection empty or network", err);
-    }
-    return null;
-}
-
-export async function initOrUpdateUserRecord(dataObject) {
-    console.log("Saving to DB...");
-    const user = await window.websim.getCurrentUser();
-    let record = null;
-    
-    try {
-        record = await getUserRecord();
-    } catch (e) {
-        console.error("Error fetching record:", e);
-    }
-
-    // Prepare the structure to append
-    const newEntry = {
+    const payload = {
+        owner_id: user.id,
+        owner_username: user.username,
         timestamp: new Date().toISOString(),
+        is_public: false, // Default to private
         ...dataObject
     };
 
-    if (!record) {
-        console.log("Creating new user record...");
-        // Initialize: 10 columns of empty arrays/objects
-        const payload = {
-            owner_id: user.id,
-            col_1: [newEntry], 
-            col_2: [], col_3: [], col_4: [], col_5: [],
-            col_6: [], col_7: [], col_8: [], col_9: [], col_10: []
-        };
-        await room.collection(COLLECTION_NAME).create(payload);
-    } else {
-        console.log("Updating existing record...", record.id);
-        let currentList = record.col_1 || [];
-        if (!Array.isArray(currentList)) currentList = [];
-        currentList.push(newEntry);
-
-        await room.collection(COLLECTION_NAME).update(record.id, {
-            col_1: currentList
-        });
-    }
-    console.log("DB Save complete.");
+    await room.collection(COLLECTION_NAME).create(payload);
 }
 
-export function subscribeToHistory(callback) {
-    const user = window.websim.getCurrentUser(); // Sync, might need await in init, but usually cached
-    // Subscription returns all records, need to filter client side or rely on query
+export async function getCreations(mode = 'mine') {
+    const user = await window.websim.getCurrentUser();
+    
+    let filter = {};
+    if (mode === 'mine') {
+        filter = { owner_id: user.id };
+    } else if (mode === 'public') {
+        filter = { is_public: true };
+    }
+
+    try {
+        const records = await room.collection(COLLECTION_NAME)
+            .filter(filter)
+            .getList();
+        
+        // Sort by timestamp desc manually if DB doesn't support sort in filter yet
+        return records.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } catch (e) {
+        console.error("Error fetching creations", e);
+        return [];
+    }
+}
+
+export async function togglePublicStatus(id, newStatus) {
+    await room.collection(COLLECTION_NAME).update(id, {
+        is_public: newStatus
+    });
+}
+
+export function subscribeToCreations(callback) {
+    // This subscribes to ALL changes, we might want to filter client side for better UX updates
     return room.collection(COLLECTION_NAME).subscribe((records) => {
-        // Find my record
-        const myRecord = records.find(r => r.owner_id === window.websim.internalCurrentUser?.id || r.owner_id === user?.id); // fallback
-        if (myRecord && myRecord.col_1) {
-            callback(myRecord.col_1);
-        } else {
-            callback([]);
-        }
+        callback(records);
     });
 }

@@ -11,62 +11,77 @@
     <div class="container">
         <header>
             <h1>Pixel Alchemy</h1>
-            <p>Upload &rarr; AI Modify &rarr; Algorithmic Sort</p>
+            <nav class="main-nav">
+                <button class="nav-btn active" data-tab="create">Create</button>
+                <button class="nav-btn" data-tab="mine">My Gallery</button>
+                <button class="nav-btn" data-tab="public">Public Feed</button>
+            </nav>
         </header>
 
-        <section id="input-section">
-            <div class="file-upload-wrapper">
-                <input type="file" id="imageInput" accept="image/*">
-                <div class="upload-placeholder">
-                    <span>Tap to upload Source Image</span>
+        <main id="tab-create" class="tab-content active">
+            <section id="input-section">
+                <div class="file-upload-wrapper">
+                    <input type="file" id="imageInput" accept="image/*">
+                    <div class="upload-placeholder">
+                        <span>Tap to upload Source Image</span>
+                    </div>
+                    <img id="preview" hidden>
                 </div>
-                <img id="preview" hidden>
-            </div>
-            
-            <textarea id="promptInput" placeholder="Describe how AI should modify this image..."></textarea>
-            
-            <button id="generateBtn" disabled>Initiate Sequence</button>
-        </section>
+                
+                <textarea id="promptInput" placeholder="Describe how AI should modify this image..."></textarea>
+                
+                <button id="generateBtn" disabled>Initiate Sequence</button>
+            </section>
 
-        <section id="status-section" class="hidden">
-            <canvas id="processCanvas" width="512" height="512"></canvas>
-            <div class="status-info">
-                <div class="loader"></div>
-                <p id="status-text">Initializing...</p>
-            </div>
-            <progress id="progressBar" value="0" max="100"></progress>
-        </section>
+            <section id="status-section" class="hidden">
+                <canvas id="processCanvas" width="512" height="512"></canvas>
+                <div class="status-info">
+                    <div class="loader"></div>
+                    <p id="status-text">Initializing...</p>
+                </div>
+                <progress id="progressBar" value="0" max="100"></progress>
+            </section>
 
-        <section id="results-section" class="hidden">
-            <h2>Current Generation</h2>
-            <div class="grid">
-                <div class="card">
-                    <span>Original</span>
-                    <img id="res-original">
+            <section id="results-section" class="hidden">
+                <h2>Current Generation</h2>
+                <div class="grid">
+                    <div class="card">
+                        <span>Original</span>
+                        <img id="res-original">
+                        <a href="#" download class="dl-btn">⬇</a>
+                    </div>
+                    <div class="card">
+                        <span>AI Modified (Target)</span>
+                        <img id="res-target">
+                        <a href="#" download class="dl-btn">⬇</a>
+                    </div>
+                    <div class="card">
+                        <span>Original Pixels &rarr; Target Shape</span>
+                        <img id="res-algo1">
+                        <a href="#" download class="dl-btn">⬇</a>
+                    </div>
+                    <div class="card">
+                        <span>Target Pixels &rarr; Original Shape</span>
+                        <img id="res-algo2">
+                        <a href="#" download class="dl-btn">⬇</a>
+                    </div>
+                    <div class="card" style="grid-column: span 2;">
+                        <span>Difference Animation (Sand Effect)</span>
+                        <video id="res-video" controls loop muted autoplay></video>
+                        <a href="#" download class="dl-btn">⬇</a>
+                    </div>
                 </div>
-                <div class="card">
-                    <span>AI Modified (Target)</span>
-                    <img id="res-target">
-                </div>
-                <div class="card">
-                    <span>Original Pixels &rarr; Target Shape</span>
-                    <img id="res-algo1">
-                </div>
-                <div class="card">
-                    <span>Target Pixels &rarr; Original Shape</span>
-                    <img id="res-algo2">
-                </div>
-                <div class="card" style="grid-column: span 2;">
-                    <span>Difference Animation (Sand Effect)</span>
-                    <video id="res-video" controls loop muted autoplay></video>
-                </div>
-            </div>
-        </section>
+            </section>
+        </main>
 
-        <section id="history-section">
-            <h2>History (DB Column 1)</h2>
-            <div id="history-list"></div>
-        </section>
+        <main id="tab-gallery" class="tab-content">
+            <div class="gallery-controls">
+                <input type="text" id="gallerySearch" placeholder="Filter by prompt...">
+            </div>
+            <div id="gallery-grid" class="gallery-grid">
+                <!-- Gallery items injected here -->
+            </div>
+        </main>
     </div>
 
     <script type="module" src="app.js"></script>

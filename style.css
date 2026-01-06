@@ -23,8 +23,57 @@ body {
     gap: 20px;
 }
 
-header h1 { margin: 0; font-size: 1.5rem; }
-header p { margin: 5px 0 0; color: var(--muted); font-size: 0.9rem; }
+header {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+header h1 { margin: 0; font-size: 1.5rem; text-align: center; }
+
+/* Navigation */
+.main-nav {
+    display: flex;
+    background: var(--card);
+    padding: 5px;
+    border-radius: 8px;
+    gap: 5px;
+}
+
+.nav-btn {
+    flex: 1;
+    background: transparent;
+    color: var(--muted);
+    padding: 10px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
+}
+
+.nav-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* Input Section */
 .file-upload-wrapper {
@@ -146,27 +195,129 @@ progress { width: 100%; height: 6px; border-radius: 3px; }
     background: #000;
 }
 
-/* History */
-.history-item {
+/* Gallery Grid */
+.gallery-controls {
+    margin-bottom: 20px;
+}
+.gallery-controls input {
+    width: 100%;
+    padding: 12px;
     background: var(--card);
+    border: 1px solid var(--muted);
     border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-left: 4px solid var(--primary);
+    color: white;
+    font-size: 1rem;
 }
-.history-meta {
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin-bottom: 5px;
-    display: block;
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
 }
-.history-thumbs {
+
+.gallery-item {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 15px;
     display: flex;
-    gap: 5px;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
 }
-.history-thumbs img {
-    width: 40px;
-    height: 40px;
+
+.gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.gallery-prompt {
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--text);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.gallery-date {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.gallery-thumbs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scrollbar-width: thin;
+}
+
+.gallery-thumbs img, .gallery-thumbs video {
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
     object-fit: cover;
-    border-radius: 4px;
+    background: #000;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
 }
+
+.gallery-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 12px;
+}
+
+.public-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.public-toggle input {
+    cursor: pointer;
+}
+
+.download-group {
+    display: flex;
+    gap: 10px;
+}
+
+.icon-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+}
+.icon-btn:hover { background: var(--primary); }
+
+.dl-btn {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    text-align: center;
+    line-height: 24px;
+    text-decoration: none;
+    font-size: 14px;
+}
+.card { position: relative; }
