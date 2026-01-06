@@ -117,17 +117,18 @@ generateBtn.addEventListener('click', async () => {
         // Target is 'targetBlob' (Blob)
         const targetObjUrl = URL.createObjectURL(targetBlob);
 
-        const { algo1Blob, algo2Blob } = await processImages(sourceObjUrl, targetObjUrl, ctx);
+        const { algo1Blob, algo2Blob, videoBlob } = await processImages(sourceObjUrl, targetObjUrl, ctx);
         
         // Clean up object URLs
         URL.revokeObjectURL(sourceObjUrl);
         URL.revokeObjectURL(targetObjUrl);
 
-        updateStatus(80, "Uploading Algorithm Results...");
+        updateStatus(80, "Uploading Algorithm Results & Video...");
 
         // 4. Upload Algo Results
         const algo1Url = await uploadFile(algo1Blob, "algo_source_to_target.png");
         const algo2Url = await uploadFile(algo2Blob, "algo_target_to_source.png");
+        const videoUrl = await uploadFile(videoBlob, "diff_animation.webm");
 
         updateStatus(90, "Saving to Database...");
 
@@ -137,7 +138,8 @@ generateBtn.addEventListener('click', async () => {
             source_url: sourceUrl,
             target_url: targetUrl,
             algo1_url: algo1Url,
-            algo2_url: algo2Url
+            algo2_url: algo2Url,
+            video_url: videoUrl
         };
 
         await initOrUpdateUserRecord(dataPayload);
@@ -149,6 +151,7 @@ generateBtn.addEventListener('click', async () => {
         document.getElementById('res-target').src = targetUrl;
         document.getElementById('res-algo1').src = algo1Url;
         document.getElementById('res-algo2').src = algo2Url;
+        document.getElementById('res-video').src = videoUrl;
 
         statusSection.classList.add('hidden');
         resultsSection.classList.remove('hidden');
@@ -206,6 +209,7 @@ function renderHistory(list) {
                 <a href="${item.target_url}" target="_blank"><img src="${item.target_url}" title="AI Target"></a>
                 <a href="${item.algo1_url}" target="_blank"><img src="${item.algo1_url}" title="Source Px -> Target"></a>
                 <a href="${item.algo2_url}" target="_blank"><img src="${item.algo2_url}" title="Target Px -> Source"></a>
+                ${item.video_url ? `<a href="${item.video_url}" target="_blank"><video src="${item.video_url}" title="Diff Animation" muted loop autoplay style="width:40px;height:40px;object-fit:cover;"></video></a>` : ''}
             </div>
         `;
         historyList.appendChild(div);
